@@ -4,15 +4,15 @@
  *
  * To edit config, see `stagehand.config.ts`
  *
- * In this script, we'll be extracting data from a PDF document.
+ * In this script, we'll be automating FINTRAC Internal Form submission with corporate data.
  *
- * 1. Navigate to the PDF at https://octo-brown.vercel.app/pdfs/person/maplepay_articles_of_incorporation.pdf
- * 2. Use `extract` to read and extract corporation information from the PDF
- * 3. Return the corporation name, province, and both incorporator names
+ * 1. Navigate to the FINTRAC Google Form
+ * 2. Fill out corporation legal name and business number
+ * 3. Fill any additional corporate information fields
+ * 4. Submit the form
  */
 
 import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
 
 export async function main({
     stagehand,
@@ -21,145 +21,205 @@ export async function main({
 }) {
     console.log(
         [
-            `🤘 "Welcome to Stagehand PDF Extractor!"`,
+            `🤘 "Welcome to Stagehand FINTRAC Forms Automation!"`,
             "",
-            "Stagehand will automatically extract data from a PDF document.",
+            "Stagehand will automatically fill out the FINTRAC Internal Form with corporate data.",
             "Watch as this demo performs the following steps:",
             "",
-            `📍 Step 1: Navigate to the Articles of Incorporation PDF`,
-            `📍 Step 2: Use AI to extract corporation details from the PDF`,
-            `📍 Step 3: Return structured data including corporation name, province, and incorporators`,
+            `📍 Step 1: Navigate to the FINTRAC Google Form`,
+            `📍 Step 2: Fill in Legal Name of Corporation`,
+            `📍 Step 3: Fill in Business Number`,
+            `📍 Step 4: Fill any additional corporate fields`,
+            `📍 Step 5: Submit the form`,
         ].join("\n"),
     );
 
     // Get the page object from stagehand for navigation
     const page = stagehand.context.pages()[0];
 
-    // Navigate to the PDF
-    const pdfUrl = "https://octo-brown.vercel.app/pdfs/person/maplepay_articles_of_incorporation.pdf";
-    announce(`Navigating to PDF: ${pdfUrl}`, "Navigation");
-    await page.goto(pdfUrl, { waitUntil: "domcontentloaded" });
+    // Navigate to the Google Form
+    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScqvClXCUBYZjr56QxZv-4cDWpsd93TKXeyYJBChg0qfPVa2g/viewform";
+    announce(`Navigating to Google Form: ${formUrl}`, "Navigation");
+    await page.goto(formUrl, { waitUntil: "domcontentloaded" });
 
-    // Wait for the PDF to load and render
-    announce("Waiting for PDF to render...", "Navigation");
+    // Wait for the form to load completely
+    announce("Waiting for Google Form to load...", "Navigation");
     await page.waitForLoadState("networkidle");
+    
+    // Give form extra time to fully render
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    announce("Google Form loaded successfully", "Navigation");
 
-    // Give PDF viewer extra time to fully render the content
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    announce("PDF loaded successfully", "Navigation");
+    // Define dummy data to fill in the FINTRAC Internal Form
+    const dummyData = {
+        legalNameOfCorporation: "MapleLeaf Financial Services Inc.",
+        businessNumber: "123456789RT0001",
+        // Additional fields that might appear
+        incorporationNumber: "1234567",
+        registrationDate: "2020-01-15",
+        businessAddress: "789 Bay Street, Toronto, ON M5G 2N7",
+        principalBusinessActivity: "Financial Services and Money Transfer",
+        contactPerson: "Sarah Johnson",
+        phoneNumber: "416-555-0198",
+        emailAddress: "compliance@mapleleaffinancial.ca"
+    };
 
-    // Try to find the PDF viewer/embed element
-    let pdfViewerSelector = null;
+    announce("Using Stagehand to fill out the Google Form...", "Automation");
+
+    // Use Stagehand's built-in methods to interact with form elements
+    announce("Analyzing form fields...", "Automation");
+
     try {
-        // Common selectors for PDF viewers in browsers
-        const selectors = ['embed[type="application/pdf"]', 'object[type="application/pdf"]', 'iframe'];
-        for (const selector of selectors) {
-            const element = await page.locator(selector).first();
-            if (await element.count() > 0) {
-                pdfViewerSelector = selector;
-                announce(`Found PDF viewer using selector: ${selector}`, "PDF Viewer");
-                break;
+        // Wait for form to be fully loaded
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Use more specific targeting for Google Forms input fields
+        announce("Looking for Google Form input fields...", "Automation");
+        
+        // Method 1: Try direct Playwright selectors for Google Forms
+        try {
+            // Google Forms typically use these selectors for text inputs
+            const inputCount = await page.locator('input[type="text"], textarea').count();
+            
+            if (inputCount >= 2) {
+                announce(`Found ${inputCount} input fields, filling them directly...`, "Automation");
+                
+                // Fill the first input (Legal Name of Corporation)
+                const firstInput = page.locator('input[type="text"], textarea').first();
+                await firstInput.click();
+                await firstInput.fill(dummyData.legalNameOfCorporation);
+                announce(`Filled first field with: ${dummyData.legalNameOfCorporation}`, "Automation");
+                
+                // Fill the second input (Business Number)
+                const secondInput = page.locator('input[type="text"], textarea').nth(1);
+                await secondInput.click();
+                await secondInput.fill(dummyData.businessNumber);
+                announce(`Filled second field with: ${dummyData.businessNumber}`, "Automation");
+                
+                // Fill any additional inputs if they exist
+                const additionalData = [
+                    dummyData.incorporationNumber,
+                    dummyData.businessAddress,
+                    dummyData.contactPerson,
+                    dummyData.phoneNumber,
+                    dummyData.emailAddress
+                ];
+                
+                for (let i = 2; i < inputCount && (i - 2) < additionalData.length; i++) {
+                    const additionalInput = page.locator('input[type="text"], textarea').nth(i);
+                    await additionalInput.click();
+                    await additionalInput.fill(additionalData[i - 2]);
+                    announce(`Filled additional field ${i + 1} with: ${additionalData[i - 2]}`, "Automation");
+                }
+            } else {
+                throw new Error("Not enough input fields found, trying Stagehand act method");
             }
+            
+        } catch (directError) {
+            announce(`Direct input method failed: ${directError}. Trying Stagehand act method...`, "Automation");
+            
+            // Method 2: Fallback to Stagehand's act method with more specific instructions
+            announce("Using Stagehand act method to fill Legal Name of Corporation...", "Automation");
+            await stagehand.act(`Click on the text input field under "Legal Name of Corporation" and type "${dummyData.legalNameOfCorporation}"`);
+
+            announce("Using Stagehand act method to fill Business Number...", "Automation");
+            await stagehand.act(`Click on the text input field under "Business Number" and type "${dummyData.businessNumber}"`);
         }
-    } catch (e) {
-        announce("Could not find specific PDF viewer element, will use full page", "PDF Viewer");
+
+        // Try to find and click submit button
+        announce("Looking for submit button...", "Automation");
+        
+        try {
+            // Try direct Playwright approach first
+            const submitButton = page.locator('input[type="submit"], button[type="submit"], [role="button"]:has-text("Submit")').first();
+            if (await submitButton.count() > 0) {
+                await submitButton.click();
+                announce("Clicked submit button directly", "Automation");
+            } else {
+                throw new Error("No submit button found with direct selectors");
+            }
+        } catch {
+            // Fallback to Stagehand act method
+            announce("Using Stagehand to find and click submit button...", "Automation");
+            await stagehand.act("Find and click the Submit button to submit the form");
+        }
+
+        announce("Form filling and submission completed!", "Automation");
+
+    } catch (error) {
+        announce(`Error during form filling: ${error}`, "Error");
     }
 
-    // Use Agent with CUA (Computer Use Agent) mode for better PDF handling
-    announce("Creating AI agent to extract information from the PDF...", "Agent");
-
-    const agent = stagehand.agent({
-        cua: true, // Enable Computer Use Agent mode for vision capabilities
-        model: {
-            modelName: "google/gemini-2.5-computer-use-preview-10-2025",
-            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
-        },
-        systemPrompt: `You are a helpful assistant that can read and extract information from PDF documents.
-        You can see the PDF on screen and extract text from it.
-        Be precise and only extract information you can clearly see.
-        Always return your findings in valid JSON format.`,
-    });
-
-    announce("Agent extracting corporation information from the PDF...", "Agent");
-
-    // Use the agent to extract information
-    const agentResult = await agent.execute({
-        instruction: `Look at the Articles of Incorporation PDF document visible on screen.
-        Extract and return the following information in JSON format:
-        1. The corporation name
-        2. The province or territory where it's incorporated
-        3. All incorporator names listed in the document
-        
-        If you can't see all the information on the current view, scroll down to see more.
-        Return the data as: {"corporationName": "...", "province": "...", "incorporators": ["...", "..."]}`,
-        maxSteps: 20,
-        highlightCursor: true, // Highlight the cursor for better visibility during execution
-    });
-
-    announce(`Agent completed extraction`, "Agent");
-
-    // Parse the agent's response to extract the structured data
-    let corporationInfo = {
-        corporationName: "",
-        province: "",
-        incorporators: [] as string[],
+    // Check if the form was successfully submitted
+    const submissionResult = {
+        success: false,
+        message: "Form submission attempted",
+        automationResponse: "Stagehand automation completed",
+        filledData: dummyData,
     };
 
     try {
-        // Try to extract JSON from the agent's message
-        const jsonMatch = agentResult.message.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const parsedData = JSON.parse(jsonMatch[0]);
-            corporationInfo = {
-                corporationName: parsedData.corporationName || "",
-                province: parsedData.province || "",
-                incorporators: Array.isArray(parsedData.incorporators) ? parsedData.incorporators : [],
-            };
-        } else {
-            // Fallback: try to parse the message as text
-            announce("Could not find JSON in agent response, parsing as text", "Agent");
-            console.log("Agent message:", agentResult.message);
-
-            // Try to extract information from text
-            const nameMatch = agentResult.message.match(/corporation name[:\s]+([^\n,]+)/i);
-            const provinceMatch = agentResult.message.match(/province[:\s]+([^\n,]+)/i);
-
-            if (nameMatch) corporationInfo.corporationName = nameMatch[1].trim();
-            if (provinceMatch) corporationInfo.province = provinceMatch[1].trim();
-
-            // Try to find incorporator names (look for patterns like "1. Name" or "Name,")
-            const incorporatorMatches = agentResult.message.match(/(?:incorporators?[:\s]+|[\d]+\.)\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/gi);
-            if (incorporatorMatches) {
-                corporationInfo.incorporators = incorporatorMatches.map(m => m.replace(/^[\d]+\.\s*/, '').trim());
-            }
+        // Look for success indicators on the page
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait a bit for any redirect or confirmation
+        
+        const currentUrl = page.url();
+        const pageText = await page.locator('body').textContent();
+        
+        // Common success indicators for Google Forms
+        const successIndicators = [
+            'Your response has been recorded',
+            'Thank you',
+            'Response recorded',
+            'Submitted',
+            'form has been submitted'
+        ];
+        
+        const hasSuccessIndicator = successIndicators.some(indicator => 
+            pageText?.toLowerCase().includes(indicator.toLowerCase()) || 
+            currentUrl.includes('formResponse') || 
+            currentUrl.includes('response')
+        );
+        
+        if (hasSuccessIndicator) {
+            submissionResult.success = true;
+            submissionResult.message = "Form successfully submitted!";
         }
-    } catch (e) {
-        announce(`Error parsing agent response: ${e}`, "Agent");
-        console.log("Raw agent message:", agentResult.message);
+        
+    } catch (error) {
+        console.log("Error checking submission status:", error);
+        submissionResult.message = "Form submission status unclear";
     }
 
     announce(
-        `Successfully extracted corporation information:\n\n${JSON.stringify(corporationInfo, null, 2)}`,
-        "Extract Complete",
+        `Form submission completed:\n\n${JSON.stringify(submissionResult, null, 2)}`,
+        "Submission Complete",
     );
 
     console.log(
         [
             "",
             "=".repeat(60),
-            "📋 EXTRACTED CORPORATION INFORMATION",
+            "� GOOGLE FORM SUBMISSION RESULTS",
             "=".repeat(60),
             "",
-            `🏢 Corporation Name: ${corporationInfo.corporationName}`,
-            `📍 Province: ${corporationInfo.province}`,
-            `👥 Incorporators:`,
-            ...corporationInfo.incorporators.map((name, index) => `   ${index + 1}. ${name}`),
+            `✅ Success: ${submissionResult.success}`,
+            `📄 Message: ${submissionResult.message}`,
+            `🤖 Automation Response: ${submissionResult.automationResponse}`,
+            "",
+            "📋 FINTRAC Data Used:",
+            `   Legal Name of Corporation: ${dummyData.legalNameOfCorporation}`,
+            `   Business Number: ${dummyData.businessNumber}`,
+            `   Incorporation Number: ${dummyData.incorporationNumber}`,
+            `   Business Address: ${dummyData.businessAddress}`,
+            `   Contact Person: ${dummyData.contactPerson}`,
+            `   Phone: ${dummyData.phoneNumber}`,
+            `   Email: ${dummyData.emailAddress}`,
             "",
             "=".repeat(60),
         ].join("\n"),
     );
 
-    return corporationInfo;
+    return submissionResult;
 }
 
 function announce(message: string, title?: string) {
