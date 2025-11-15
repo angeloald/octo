@@ -137,24 +137,24 @@ const ApplicationRow = ({ application }: { application: Application }) => {
     switch (urgency) {
       case "high":
         return {
-          bg: "bg-red-500/10 dark:bg-red-500/20",
-          dot: "bg-red-500",
-          text: "text-red-700 dark:text-red-400",
-          border: "border-red-200 dark:border-red-500/30",
+          bg: "bg-red-500/10",
+          dot: "bg-[#EF4444]",
+          text: "text-[#EF4444]",
+          border: "border-[#EF4444]/30",
         };
       case "medium":
         return {
-          bg: "bg-orange-500/10 dark:bg-orange-500/20",
-          dot: "bg-orange-500",
-          text: "text-orange-700 dark:text-orange-400",
-          border: "border-orange-200 dark:border-orange-500/30",
+          bg: "bg-[#1A73E8]/10",
+          dot: "bg-[#1A73E8]",
+          text: "text-[#1A73E8]",
+          border: "border-[#1A73E8]/30",
         };
       case "low":
         return {
-          bg: "bg-green-500/10 dark:bg-green-500/20",
-          dot: "bg-green-500",
-          text: "text-green-700 dark:text-green-400",
-          border: "border-green-200 dark:border-green-500/30",
+          bg: "bg-[#00C6A7]/10",
+          dot: "bg-[#00C6A7]",
+          text: "text-[#00C6A7]",
+          border: "border-[#00C6A7]/30",
         };
     }
   };
@@ -224,15 +224,15 @@ const ApplicationRow = ({ application }: { application: Application }) => {
             title="Application Processing"
           />
           <div className="flex gap-2">
-            <Button size="sm" variant="default" className="gap-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30">
+            <Button size="sm" variant="default" className="gap-2 bg-[#00C6A7]/20 hover:bg-[#00C6A7]/30 text-[#00C6A7] border-[#00C6A7]/30">
               <CheckCircle2 className="size-4" />
               Approve
             </Button>
-            <Button size="sm" variant="destructive" className="gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30">
+            <Button size="sm" variant="destructive" className="gap-2 bg-[#EF4444]/20 hover:bg-[#EF4444]/30 text-[#EF4444] border-[#EF4444]/30">
               <AlertCircle className="size-4" />
               Reject
             </Button>
-            <Button size="sm" variant="outline" className="border-primary/30 hover:bg-primary/10">
+            <Button size="sm" variant="outline" className="border-[#3A3A3A] hover:bg-[#1A73E8]/10 hover:border-[#1A73E8]/30">
               Request More Info
             </Button>
           </div>
@@ -269,12 +269,12 @@ const WorkflowInspector = ({ steps }: { steps: WorkflowStep[] }) => {
             <div key={step.step} className="flex gap-4 relative group">
               {/* Step indicator */}
               <div className="flex flex-col items-center relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary/60 text-white flex items-center justify-center font-bold text-sm shrink-0 z-10 shadow-lg shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/50 transition-all ring-2 ring-primary/30">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1A73E8] via-[#1A73E8]/80 to-[#00C6A7] text-white flex items-center justify-center font-bold text-sm shrink-0 z-10 shadow-lg shadow-[#1A73E8]/30 group-hover:scale-110 group-hover:shadow-[#1A73E8]/50 transition-all ring-2 ring-[#1A73E8]/30">
                   {step.step}
                 </div>
                 {/* Connecting line with gradient */}
                 {index !== steps.length - 1 && (
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-0.5 bg-gradient-to-b from-primary/50 via-primary/30 to-primary/20 h-full" />
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-0.5 bg-gradient-to-b from-[#1A73E8]/50 via-[#1A73E8]/30 to-[#1A73E8]/20 h-full" />
                 )}
               </div>
               
@@ -289,7 +289,7 @@ const WorkflowInspector = ({ steps }: { steps: WorkflowStep[] }) => {
                     <h3 className="text-sm font-semibold leading-snug text-foreground">
                       {step.name}
                     </h3>
-                    <CheckCircle2 className="size-4 text-green-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                    <CheckCircle2 className="size-4 text-[#00C6A7] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-[0_0_8px_rgba(0,198,167,0.5)]" />
                   </div>
                   {step.description && (
                     <p className="text-xs text-muted-foreground/70 leading-relaxed">
@@ -306,10 +306,10 @@ const WorkflowInspector = ({ steps }: { steps: WorkflowStep[] }) => {
         <div className="mt-6 pt-6 border-t border-primary/20">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-muted-foreground/70">Automation Progress</span>
-            <span className="font-bold text-primary drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]">Ready</span>
+            <span className="font-bold text-[#1A73E8] drop-shadow-[0_0_8px_rgba(26,115,232,0.5)]">Ready</span>
           </div>
           <div className="w-full h-2 bg-card/50 rounded-full overflow-hidden ring-1 ring-primary/20">
-            <div className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary/60 rounded-full w-0 group-hover:w-full transition-all duration-1000 shadow-[0_0_12px_rgba(99,102,241,0.5)]" />
+            <div className="h-full bg-gradient-to-r from-[#1A73E8] via-[#1A73E8]/80 to-[#00C6A7] rounded-full w-0 group-hover:w-full transition-all duration-1000 shadow-[0_0_12px_rgba(26,115,232,0.5)]" />
           </div>
         </div>
       </div>
