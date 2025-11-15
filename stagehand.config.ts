@@ -11,13 +11,13 @@ dotenv.config();
 if (process.env.NODE_ENV !== "production") {
     // Avoid printing full secrets; we only confirm presence.
     console.log("[stagehand.config] Env loaded", {
-        hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+        hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
         hasBrowserbaseApiKey: Boolean(process.env.BROWSERBASE_API_KEY),
         hasBrowserbaseProjectId: Boolean(process.env.BROWSERBASE_PROJECT_ID),
     });
 }
 
-const DEFAULT_MODEL: AvailableModel = "gpt-4o";
+const DEFAULT_MODEL: AvailableModel = "google/gemini-2.5-flash";
 
 // Helper to safely get and trim env vars
 const getEnv = (key: string): string | undefined => {
@@ -39,10 +39,10 @@ const StagehandConfig: V3Options = {
     localBrowserLaunchOptions: {
         headless: false /* Run browser in headless mode */,
     },
-    model: getEnv("OPENAI_API_KEY")
+    model: getEnv("GEMINI_API_KEY")
         ? {
             modelName: DEFAULT_MODEL,
-            apiKey: getEnv("OPENAI_API_KEY")!,
+            apiKey: getEnv("GEMINI_API_KEY")!,
         }
         : DEFAULT_MODEL,
     // Always set Browserbase credentials if available
