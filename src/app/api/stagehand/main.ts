@@ -21,41 +21,53 @@ export async function main({
 }) {
     console.log(
         [
-            `🤘 "Welcome to Stagehand Multi-Page FINTRAC Forms Automation!"`,
+            `🤘 "Welcome to Stagehand Multi-Form FINTRAC Automation!"`,
             "",
-            "Stagehand will automatically fill out the multi-page FINTRAC Internal Form with corporate data.",
+            "Stagehand will automatically fill out TWO FINTRAC forms with corporate data.",
             "Watch as this demo performs the following steps:",
             "",
-            `📍 Step 1: Navigate to the FINTRAC Google Form`,
-            `📍 Step 2: Fill in Page 1 - Legal Name of Corporation & Business Number`,
-            `📍 Step 3: Click Next to proceed to Page 2`,
-            `📍 Step 4: Fill in Page 2 - UBO List with Ownership Percentages`,
-            `📍 Step 5: Fill in Chief Compliance Officer (CCO) information`,
-            `📍 Step 6: Submit the completed multi-page form`,
+            "FORM 1 - Document Upload Form:",
+            `📍 Step 1: Navigate to the Document Upload Form`,
+            `📍 Step 2: Fill in all 4 document URLs`,
+            `📍 Step 3: Submit Form 1`,
+            "",
+            "FORM 2 - Corporate Information Form:",
+            `📍 Step 4: Navigate to the Corporate Information Form`,
+            `📍 Step 5: Fill Page 1 (Legal Name & Business Number)`,
+            `📍 Step 6: Click Next to Page 2`,
+            `📍 Step 7: Fill Page 2 (UBO List & CCO Information)`,
+            `📍 Step 8: Submit Form 2`,
         ].join("\n"),
     );
 
     // Get the page object from stagehand for navigation
     const page = stagehand.context.pages()[0];
 
-    // Navigate to the Google Form
-    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScqvClXCUBYZjr56QxZv-4cDWpsd93TKXeyYJBChg0qfPVa2g/viewform";
-    announce(`Navigating to Google Form: ${formUrl}`, "Navigation");
-    await page.goto(formUrl, { waitUntil: "domcontentloaded" });
+    // ========== FORM 1: Document Upload Form ==========
+    announce("========== STARTING FORM 1: DOCUMENT UPLOAD ==========", "Form 1");
+    
+    const form1Url = "https://docs.google.com/forms/d/e/1FAIpQLSdwWNLL8c7Y5yLvufQkvrmFF-Ip0CrjbRlEOB4TvTEymvQS0Q/viewform";
+    announce(`Navigating to Form 1: ${form1Url}`, "Form 1");
+    await page.goto(form1Url, { waitUntil: "domcontentloaded" });
 
-    // Wait for the form to load completely
-    announce("Waiting for Google Form to load...", "Navigation");
+    // Wait for Form 1 to load completely
+    announce("Waiting for Form 1 to load...", "Form 1");
     await page.waitForLoadState("networkidle");
     
     // Give form extra time to fully render
     await new Promise(resolve => setTimeout(resolve, 2000));
-    announce("Google Form loaded successfully", "Navigation");
+    announce("Form 1 loaded successfully", "Form 1");
 
         // Define dummy data to fill in the FINTRAC Internal Form
     const dummyData = {
+        // Page 1 - Document URLs
+        msbRegistrationFormUrl: "https://example.com/documents/msb-registration-form.pdf",
+        amlComplianceFormUrl: "https://example.com/documents/aml-compliance-form.pdf",
+        riskAssessmentFormUrl: "https://example.com/documents/risk-assessment-form.pdf",
+        ownershipControlFormUrl: "https://example.com/documents/ownership-control-form.pdf",
+        // Legacy fields (may not be used in this form)
         legalNameOfCorporation: "MapleLeaf Financial Services Inc.",
         businessNumber: "123456789RT0001",
-        // Additional fields that might appear
         incorporationNumber: "1234567",
         registrationDate: "2020-01-15",
         businessAddress: "789 Bay Street, Toronto, ON M5G 2N7",
@@ -83,87 +95,197 @@ export async function main({
         // Wait for form to be fully loaded
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Use more specific targeting for Google Forms input fields
-        announce("Looking for Google Form input fields...", "Automation");
+        announce("Starting to fill Form 1 document URL fields...", "Form 1");
         
-        // Method 1: Try direct Playwright selectors for Google Forms
+        // Define the document URLs to fill
+        const documentFields = [
+            { name: "MSB Registration Form URL", value: dummyData.msbRegistrationFormUrl },
+            { name: "AML Compliance Form URL", value: dummyData.amlComplianceFormUrl },
+            { name: "Risk Assessment Form URL", value: dummyData.riskAssessmentFormUrl },
+            { name: "Ownership & Control Form URL", value: dummyData.ownershipControlFormUrl }
+        ];
+        
+        // Method 1: Try Stagehand act method first (most reliable for Google Forms)
+        let filledSuccessfully = false;
+        
         try {
-            // Google Forms typically use these selectors for text inputs
-            const inputCount = await page.locator('input[type="text"], textarea').count();
+            announce("Using Stagehand AI to fill all document URL fields...", "Form 1");
             
-            if (inputCount >= 2) {
-                announce(`Found ${inputCount} input fields, filling them directly...`, "Automation");
-                
-                // Fill the first input (Legal Name of Corporation)
-                const firstInput = page.locator('input[type="text"], textarea').first();
-                await firstInput.click();
-                await firstInput.fill(dummyData.legalNameOfCorporation);
-                announce(`Filled first field with: ${dummyData.legalNameOfCorporation}`, "Automation");
-                
-                // Fill the second input (Business Number)
-                const secondInput = page.locator('input[type="text"], textarea').nth(1);
-                await secondInput.click();
-                await secondInput.fill(dummyData.businessNumber);
-                announce(`Filled second field with: ${dummyData.businessNumber}`, "Automation");
-                
-                // Fill any additional inputs if they exist
-                const additionalData = [
-                    dummyData.incorporationNumber,
-                    dummyData.businessAddress,
-                    dummyData.contactPerson,
-                    dummyData.phoneNumber,
-                    dummyData.emailAddress
-                ];
-                
-                for (let i = 2; i < inputCount && (i - 2) < additionalData.length; i++) {
-                    const additionalInput = page.locator('input[type="text"], textarea').nth(i);
-                    await additionalInput.click();
-                    await additionalInput.fill(additionalData[i - 2]);
-                    announce(`Filled additional field ${i + 1} with: ${additionalData[i - 2]}`, "Automation");
-                }
-            } else {
-                throw new Error("Not enough input fields found, trying Stagehand act method");
+            for (const field of documentFields) {
+                announce(`Filling ${field.name}...`, "Form 1");
+                await stagehand.act(`Fill in the "${field.name}" field with "${field.value}"`);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                announce(`✓ Filled: ${field.name}`, "Form 1");
             }
             
-        } catch (directError) {
-            announce(`Direct input method failed: ${directError}. Trying Stagehand act method...`, "Automation");
+            filledSuccessfully = true;
+            announce("✓ All Form 1 fields filled successfully with Stagehand", "Form 1");
             
-            // Method 2: Fallback to Stagehand's act method with more specific instructions
-            announce("Using Stagehand act method to fill Legal Name of Corporation...", "Automation");
-            await stagehand.act(`Click on the text input field under "Legal Name of Corporation" and type "${dummyData.legalNameOfCorporation}"`);
-
-            announce("Using Stagehand act method to fill Business Number...", "Automation");
-            await stagehand.act(`Click on the text input field under "Business Number" and type "${dummyData.businessNumber}"`);
+        } catch (stagehandError) {
+            announce(`Stagehand method failed: ${stagehandError}. Trying direct selectors...`, "Form 1");
+            
+            // Method 2: Fallback to direct Playwright selectors
+            try {
+                const inputSelectors = [
+                    'input[type="text"]',
+                    'input[type="url"]',
+                    'textarea',
+                    'input[aria-labelledby]',
+                    '.quantumWizTextinputPaperinputInput'
+                ];
+                
+                let selectedSelector = null;
+                let inputCount = 0;
+                
+                for (const selector of inputSelectors) {
+                    const count = await page.locator(selector).count();
+                    if (count >= 4) {
+                        announce(`Found ${count} input fields with selector: ${selector}`, "Form 1");
+                        selectedSelector = selector;
+                        inputCount = count;
+                        break;
+                    }
+                }
+                
+                if (selectedSelector && inputCount >= 4) {
+                    for (let i = 0; i < documentFields.length; i++) {
+                        const input = page.locator(selectedSelector).nth(i);
+                        await input.click();
+                        await input.fill(''); // Clear first
+                        await input.fill(documentFields[i].value);
+                        announce(`✓ Filled field ${i + 1}: ${documentFields[i].name}`, "Form 1");
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    filledSuccessfully = true;
+                    announce("✓ All Form 1 fields filled with direct selectors", "Form 1");
+                } else {
+                    throw new Error(`Only found ${inputCount} input fields, need at least 4`);
+                }
+                
+            } catch (directError) {
+                announce(`Direct selector method also failed: ${directError}`, "Form 1");
+            }
+        }
+        
+        if (!filledSuccessfully) {
+            announce("⚠️ WARNING: Could not fill Form 1 fields with any method", "Form 1");
         }
 
-        // After filling the first page, look for Next button first (before submit)
-        announce("Looking for Next button to proceed to page 2...", "Automation");
+        // Submit Form 1
+        announce("Form 1 fields filled, looking for Submit button...", "Form 1");
+        await submitForm(page, stagehand);
         
-        // Wait a moment for any animations to complete
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        announce("========== FORM 1 COMPLETE ==========", "Form 1");
+        
+        // ========== FORM 2: Corporate Information (Multi-Page) ==========
+        announce("========== STARTING FORM 2: CORPORATE INFORMATION ==========", "Form 2");
+        
+        const form2Url = "https://docs.google.com/forms/d/e/1FAIpQLScqvClXCUBYZjr56QxZv-4cDWpsd93TKXeyYJBChg0qfPVa2g/viewform";
+        announce(`Navigating to Form 2: ${form2Url}`, "Form 2");
+        await page.goto(form2Url, { waitUntil: "domcontentloaded" });
+        
+        // Wait for Form 2 to load
+        announce("Waiting for Form 2 to load...", "Form 2");
+        await page.waitForLoadState("networkidle");
         await new Promise(resolve => setTimeout(resolve, 2000));
+        announce("Form 2 loaded successfully", "Form 2");
+        
+        // Fill Form 2 Page 1: Legal Name and Business Number
+        announce("Filling Form 2 Page 1: Legal Name and Business Number", "Form 2 - Page 1");
+        
+        const page1Fields = [
+            { label: "Legal Name of Corporation", value: dummyData.legalNameOfCorporation },
+            { label: "Business Number", value: dummyData.businessNumber }
+        ];
+        
+        let page1Filled = false;
+        
+        // Method 1: Try Stagehand act method first
+        try {
+            announce("Using Stagehand AI to fill Page 1 fields...", "Form 2 - Page 1");
+            
+            for (const field of page1Fields) {
+                announce(`Filling field: ${field.label} = ${field.value}`, "Form 2 - Page 1");
+                await stagehand.act(`Fill in the "${field.label}" field with "${field.value}"`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                announce(`✓ Filled: ${field.label}`, "Form 2 - Page 1");
+            }
+            
+            page1Filled = true;
+            announce("✓ Page 1 fields filled successfully with Stagehand", "Form 2 - Page 1");
+            
+        } catch (stagehandError) {
+            announce(`Stagehand method failed: ${stagehandError}. Trying direct selectors...`, "Form 2 - Page 1");
+            
+            // Method 2: Fallback to direct Playwright selectors
+            try {
+                const inputSelectors = [
+                    'input[type="text"]',
+                    'textarea',
+                    'input[aria-labelledby]',
+                    '.quantumWizTextinputPaperinputInput'
+                ];
+                
+                let selectedSelector = null;
+                let inputCount = 0;
+                
+                for (const selector of inputSelectors) {
+                    const count = await page.locator(selector).count();
+                    if (count >= 2) {
+                        announce(`Found ${count} input fields with selector: ${selector}`, "Form 2 - Page 1");
+                        selectedSelector = selector;
+                        inputCount = count;
+                        break;
+                    }
+                }
+                
+                if (selectedSelector && inputCount >= 2) {
+                    for (let i = 0; i < page1Fields.length; i++) {
+                        const input = page.locator(selectedSelector).nth(i);
+                        await input.click();
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await input.fill(''); // Clear first
+                        await input.fill(page1Fields[i].value);
+                        announce(`✓ Filled field ${i + 1}: ${page1Fields[i].label} = ${page1Fields[i].value}`, "Form 2 - Page 1");
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    page1Filled = true;
+                    announce("✓ Page 1 fields filled with direct selectors", "Form 2 - Page 1");
+                } else {
+                    throw new Error(`Only found ${inputCount} input fields, need at least 2`);
+                }
+                
+            } catch (directError) {
+                announce(`Direct selector method also failed: ${directError}`, "Form 2 - Page 1");
+            }
+        }
+        
+        if (!page1Filled) {
+            announce("⚠️ WARNING: Could not fill Form 2 Page 1 fields with any method", "Form 2 - Page 1");
+        }
+        
+        // Click Next button to go to Page 2
+        announce("Form 2 Page 1 complete, looking for Next button...", "Form 2 - Page 1");
         
         let nextButtonClicked = false;
         
         // Primary Method: Use Stagehand act (most reliable for Google Forms)
         try {
-            announce("Using Stagehand to find and click Next button...", "Automation");
+            announce("Using Stagehand to find and click Next button...", "Form 2 - Navigation");
             await stagehand.act("Click the Next button to go to the next page of the form");
-            announce("Successfully clicked Next button with Stagehand", "Automation");
+            announce("Successfully clicked Next button with Stagehand", "Form 2 - Navigation");
             nextButtonClicked = true;
             
             // Wait for page 2 to load
-            announce("Waiting for page 2 to load...", "Automation");
+            announce("Waiting for Form 2 Page 2 to load...", "Form 2 - Navigation");
             await new Promise(resolve => setTimeout(resolve, 4000));
             
             // Fill out page 2 with UBO and CCO information
             await fillPage2(page, stagehand, dummyData);
             
-            // After filling page 2, submit the form
-            announce("Page 2 completed, now submitting the form...", "Automation");
-            await submitForm(page, stagehand);
-            
         } catch (stagehandError) {
-            announce(`Stagehand Next button method failed: ${stagehandError}. Trying direct selectors...`, "Automation");
+            announce(`Stagehand Next button method failed: ${stagehandError}. Trying direct selectors...`, "Form 2 - Navigation");
             
             // Fallback Method: Direct Playwright selectors
             try {
@@ -185,9 +307,9 @@ export async function main({
                         if (count > 0) {
                             const isVisible = await nextButton.isVisible();
                             if (isVisible) {
-                                announce(`Found visible Next button with selector: ${selector}`, "Automation");
+                                announce(`Found visible Next button with selector: ${selector}`, "Form 2 - Navigation");
                                 await nextButton.click();
-                                announce("Clicked Next button with direct selector", "Automation");
+                                announce("Clicked Next button with direct selector", "Form 2 - Navigation");
                                 nextButtonClicked = true;
                                 
                                 // Wait for the next page to load
@@ -195,9 +317,6 @@ export async function main({
                                 
                                 // Fill out page 2
                                 await fillPage2(page, stagehand, dummyData);
-                                
-                                // Submit after filling page 2
-                                await submitForm(page, stagehand);
                                 
                                 break;
                             }
@@ -213,15 +332,15 @@ export async function main({
                 }
                 
             } catch (directError) {
-                announce(`Direct selector method failed: ${directError}`, "Automation");
+                announce(`Direct selector method failed: ${directError}`, "Form 2 - Navigation");
             }
         }
         
-        // If Next button was never clicked, this is a single-page form
         if (!nextButtonClicked) {
-            announce("No Next button found - this appears to be a single-page form. Submitting now...", "Automation");
-            await submitForm(page, stagehand);
+            announce("⚠️ WARNING: Could not click Next button on Form 2 Page 1", "Form 2 - Navigation");
         }
+        
+        announce("========== FORM 2 COMPLETE ==========", "Form 2");
 
         announce("Form filling and submission completed!", "Automation");
 
@@ -285,21 +404,11 @@ export async function main({
             `📄 Message: ${submissionResult.message}`,
             `🤖 Automation Response: ${submissionResult.automationResponse}`,
             "",
-            "📋 FINTRAC Data Used:",
-            "Page 1:",
-            `   Legal Name of Corporation: ${dummyData.legalNameOfCorporation}`,
-            `   Business Number: ${dummyData.businessNumber}`,
-            `   Incorporation Number: ${dummyData.incorporationNumber}`,
-            `   Business Address: ${dummyData.businessAddress}`,
-            `   Contact Person: ${dummyData.contactPerson}`,
-            `   Phone: ${dummyData.phoneNumber}`,
-            `   Email: ${dummyData.emailAddress}`,
-            "",
-            "Page 2:",
-            `   UBO List: ${dummyData.uboList.map((ubo: { name: string; ownershipPercentage: string }) => `${ubo.name} (${ubo.ownershipPercentage})`).join(", ")}`,
-            `   Chief Compliance Officer: ${dummyData.chiefComplianceOfficer}`,
-            `   CCO Email: ${dummyData.ccoEmail}`,
-            `   CCO Phone: ${dummyData.ccoPhone}`,
+            "📋 FINTRAC Document URLs Submitted:",
+            `   MSB Registration Form URL: ${dummyData.msbRegistrationFormUrl}`,
+            `   AML Compliance Form URL: ${dummyData.amlComplianceFormUrl}`,
+            `   Risk Assessment Form URL: ${dummyData.riskAssessmentFormUrl}`,
+            `   Ownership & Control Form URL: ${dummyData.ownershipControlFormUrl}`,
             "",
             "=".repeat(60),
         ].join("\n"),
@@ -441,19 +550,67 @@ async function fillPage2(page: any, stagehand: any, dummyData: any) {
 async function submitForm(page: any, stagehand: any) {
     announce("Attempting to submit the form...", "Submit");
     
+    // Wait a moment for any animations to complete
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    let submitClicked = false;
+    
+    // Primary Method: Use Stagehand act (most reliable for Google Forms)
     try {
-        // Try direct Playwright approach first
-        const submitButton = page.locator('input[type="submit"], button[type="submit"], [role="button"]:has-text("Submit"), button:has-text("Submit")').first();
-        if (await submitButton.count() > 0) {
-            await submitButton.click();
-            announce("Clicked submit button directly", "Submit");
-        } else {
-            throw new Error("No submit button found with direct selectors");
+        announce("Using Stagehand to find and click Submit button...", "Submit");
+        await stagehand.act("Click the Submit button to submit the form");
+        announce("✓ Successfully clicked Submit button with Stagehand", "Submit");
+        submitClicked = true;
+        
+        // Wait for submission to complete
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+    } catch (stagehandError) {
+        announce(`Stagehand Submit method failed: ${stagehandError}. Trying direct selectors...`, "Submit");
+        
+        // Fallback Method: Direct Playwright selectors
+        const submitSelectors = [
+            '[role="button"]:has-text("Submit")',
+            'div[role="button"]:has-text("Submit")',
+            'span:has-text("Submit")',
+            'button[type="submit"]',
+            'input[type="submit"]',
+            'button:has-text("Submit")',
+            '[aria-label*="Submit"]',
+            '.appsMaterialWizButtonPaperbuttonLabel:has-text("Submit")',
+            '[jsname="M2UYVd"]'
+        ];
+        
+        for (const selector of submitSelectors) {
+            try {
+                const submitButton = page.locator(selector).first();
+                const count = await submitButton.count();
+                
+                if (count > 0) {
+                    const isVisible = await submitButton.isVisible();
+                    if (isVisible) {
+                        announce(`Found visible Submit button with selector: ${selector}`, "Submit");
+                        await submitButton.click();
+                        announce("✓ Clicked Submit button with direct selector", "Submit");
+                        submitClicked = true;
+                        
+                        // Wait for submission to complete
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        break;
+                    }
+                }
+            } catch (selectorError) {
+                announce(`Failed with selector ${selector}: ${selectorError}`, "Submit");
+                continue;
+            }
         }
-    } catch {
-        // Fallback to Stagehand act method
-        announce("Using Stagehand to find and click submit button...", "Submit");
-        await stagehand.act("Find and click the Submit button to submit the form");
+    }
+    
+    if (!submitClicked) {
+        announce("⚠️ WARNING: Could not find or click Submit button", "Submit");
+        throw new Error("Failed to click Submit button");
+    } else {
+        announce("✓ Form submitted successfully", "Submit");
     }
 }
 
