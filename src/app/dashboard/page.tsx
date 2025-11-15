@@ -90,6 +90,7 @@ type Application = {
   description: string;
   urgency: "low" | "medium" | "high";
   createdAt: Date;
+  pdfs?: string[];
 };
 
 const APPLICATIONS_DATA: Application[] = [
@@ -99,6 +100,15 @@ const APPLICATIONS_DATA: Application[] = [
     description: "Citizenship application",
     urgency: "low",
     createdAt: new Date("2025-01-01"),
+    pdfs: [
+      "/pdfs/person/maplepay_aml_compliance_program.pdf",
+      "/pdfs/person/maplepay_articles_of_incorporation.pdf",
+      "/pdfs/person/maplepay_msb_registration_form.pdf",
+      "/pdfs/person/maplepay_nuans_report.pdf",
+      "/pdfs/person/maplepay_ownership_and_control_declaration.pdf",
+      "/pdfs/person/maplepay_proof_of_identity_sarah_ahmed.pdf",
+      "/pdfs/person/maplepay_risk_assessment_summary.pdf",
+    ],
   },
   {
     id: 2,
@@ -106,6 +116,15 @@ const APPLICATIONS_DATA: Application[] = [
     description: "Visa application",
     urgency: "medium",
     createdAt: new Date("2025-01-02"),
+    pdfs: [
+      "/pdfs/person/maplepay_aml_compliance_program.pdf",
+      "/pdfs/person/maplepay_articles_of_incorporation.pdf",
+      "/pdfs/person/maplepay_msb_registration_form.pdf",
+      "/pdfs/person/maplepay_nuans_report.pdf",
+      "/pdfs/person/maplepay_ownership_and_control_declaration.pdf",
+      "/pdfs/person/maplepay_proof_of_identity_sarah_ahmed.pdf",
+      "/pdfs/person/maplepay_risk_assessment_summary.pdf",
+    ],
   },
   {
     id: 3,
@@ -113,5 +132,14 @@ const APPLICATIONS_DATA: Application[] = [
     description: "Passport application",
     urgency: "high",
     createdAt: new Date("2025-01-03"),
+    pdfs: [
+      "/pdfs/person/maplepay_aml_compliance_program.pdf",
+      "/pdfs/person/maplepay_articles_of_incorporation.pdf",
+      "/pdfs/person/maplepay_msb_registration_form.pdf",
+      "/pdfs/person/maplepay_nuans_report.pdf",
+      "/pdfs/person/maplepay_ownership_and_control_declaration.pdf",
+      "/pdfs/person/maplepay_proof_of_identity_sarah_ahmed.pdf",
+      "/pdfs/person/maplepay_risk_assessment_summary.pdf",
+    ],
   },
 ];
