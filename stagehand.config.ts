@@ -93,8 +93,8 @@ export function logLineToString(logLine: LogLine): string {
 
         // If we want to hide auxiliary information, we don't add it to the log
         return `${timestamp}::[stagehand:${logLine.category}] ${logLine.message} ${logLine.auxiliary && !HIDE_AUXILIARY
-                ? JSON.stringify(logLine.auxiliary)
-                : ""
+            ? JSON.stringify(logLine.auxiliary)
+            : ""
             }`;
     } catch (error) {
         console.error(`Error logging line:`, error);
