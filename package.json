@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@browserbasehq/stagehand": "^3.0.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
