@@ -321,20 +321,22 @@ async function fillPage2(page: any, stagehand: any, dummyData: any) {
             if (inputCount > 0) {
                 let fieldIndex = 0;
                 
-                // Fill UBO List with Ownership Percentages
+                // Fill UBO List with Ownership Percentages in the first field
                 announce("Filling UBO (Ultimate Beneficial Owner) information...", "Page 2");
-                for (const ubo of dummyData.uboList) {
-                    if (fieldIndex < inputCount) {
-                        // Fill UBO Name
-                        const nameInput = page.locator('input[type="text"], textarea').nth(fieldIndex);
-                        await nameInput.click();
-                        await nameInput.fill(`${ubo.name} - ${ubo.ownershipPercentage}`);
-                        announce(`Filled UBO ${fieldIndex + 1}: ${ubo.name} - ${ubo.ownershipPercentage}`, "Page 2");
-                        fieldIndex++;
-                    }
+                if (fieldIndex < inputCount) {
+                    // Combine all UBOs into one field entry
+                    const uboText = dummyData.uboList
+                        .map((ubo: { name: string; ownershipPercentage: string }) => `${ubo.name} - ${ubo.ownershipPercentage}`)
+                        .join(", ");
+                    
+                    const uboInput = page.locator('input[type="text"], textarea').nth(fieldIndex);
+                    await uboInput.click();
+                    await uboInput.fill(uboText);
+                    announce(`Filled UBO List: ${uboText}`, "Page 2");
+                    fieldIndex++;
                 }
                 
-                // Fill Chief Compliance Officer information
+                // Fill Chief Compliance Officer information in the next field
                 if (fieldIndex < inputCount) {
                     announce("Filling Chief Compliance Officer (CCO) information...", "Page 2");
                     const ccoInput = page.locator('input[type="text"], textarea').nth(fieldIndex);
