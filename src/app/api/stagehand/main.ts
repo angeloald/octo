@@ -380,7 +380,55 @@ async function fillPage2(page: any, stagehand: any, dummyData: any) {
             await stagehand.act(`If there is a CCO phone field, fill it with "${dummyData.ccoPhone}"`);
         }
         
-        announce("Page 2 filling completed", "Page 2");
+        announce("Page 2 filling completed, now clicking Submit...", "Page 2");
+        
+        // After filling all Page 2 fields, click Submit button
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+            // Primary Method: Use Stagehand act to find and click Submit
+            announce("Using Stagehand to find and click Submit button...", "Page 2");
+            await stagehand.act("Click the Submit button to submit the form");
+            announce("Successfully clicked Submit button with Stagehand", "Page 2");
+        } catch (submitError) {
+            announce(`Stagehand Submit method failed: ${submitError}. Trying direct selectors...`, "Page 2");
+            
+            // Fallback: Direct Playwright selectors
+            const submitSelectors = [
+                '[role="button"]:has-text("Submit")',
+                'div[role="button"]:has-text("Submit")',
+                'span:has-text("Submit")',
+                'button[type="submit"]',
+                'input[type="submit"]',
+                'button:has-text("Submit")',
+                '[jsname="M2UYVd"]'
+            ];
+            
+            let submitClicked = false;
+            for (const selector of submitSelectors) {
+                try {
+                    const submitButton = page.locator(selector).first();
+                    const count = await submitButton.count();
+                    
+                    if (count > 0) {
+                        const isVisible = await submitButton.isVisible();
+                        if (isVisible) {
+                            announce(`Found visible Submit button with selector: ${selector}`, "Page 2");
+                            await submitButton.click();
+                            announce("Clicked Submit button with direct selector", "Page 2");
+                            submitClicked = true;
+                            break;
+                        }
+                    }
+                } catch {
+                    continue;
+                }
+            }
+            
+            if (!submitClicked) {
+                announce("Warning: Could not find or click Submit button", "Page 2");
+            }
+        }
         
     } catch (error) {
         announce(`Error filling page 2: ${error}`, "Page 2 Error");
