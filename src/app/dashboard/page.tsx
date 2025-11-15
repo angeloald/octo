@@ -224,15 +224,15 @@ const ApplicationRow = ({ application }: { application: Application }) => {
             title="Application Processing"
           />
           <div className="flex gap-2">
-            <Button size="sm" variant="default" className="gap-2 bg-[#00C6A7]/20 hover:bg-[#00C6A7]/30 text-[#00C6A7] border-[#00C6A7]/30">
+            <Button size="sm" variant="outline" className="gap-2 bg-[#00C6A7]/10 hover:bg-[#00C6A7]/20 text-[#00C6A7] border-[#00C6A7]/30 hover:border-[#00C6A7]/50 shadow-lg shadow-[#00C6A7]/10 hover:shadow-[#00C6A7]/20 transition-all">
               <CheckCircle2 className="size-4" />
               Approve
             </Button>
-            <Button size="sm" variant="destructive" className="gap-2 bg-[#EF4444]/20 hover:bg-[#EF4444]/30 text-[#EF4444] border-[#EF4444]/30">
+            <Button size="sm" variant="outline" className="gap-2 bg-[#EF4444]/10 hover:bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/30 hover:border-[#EF4444]/50 shadow-lg shadow-[#EF4444]/10 hover:shadow-[#EF4444]/20 transition-all">
               <AlertCircle className="size-4" />
               Reject
             </Button>
-            <Button size="sm" variant="outline" className="border-[#3A3A3A] hover:bg-[#1A73E8]/10 hover:border-[#1A73E8]/30">
+            <Button size="sm" variant="outline" className="gap-2 bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 hover:border-primary/50 shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all">
               Request More Info
             </Button>
           </div>
