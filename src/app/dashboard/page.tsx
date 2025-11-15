@@ -6,80 +6,236 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { 
+  FileText, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle,
+  TrendingUp,
+  Users,
+  Zap
+} from "lucide-react";
 
 export default function DashboardPage() {
   return (
-    <div className="grid grid-cols-2 gap-4 w-full">
-      <div>
-        <Accordion type="single" collapsible className="flex flex-col gap-4">
-          {APPLICATIONS_DATA.map((application) => (
-            <ApplicationRow key={application.id} application={application} />
-          ))}
-        </Accordion>
+    <div className="w-full space-y-8">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Applications Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage and process government applications with AI automation
+          </p>
+        </div>
+        <Button size="lg" className="gap-2">
+          <Zap className="size-4" />
+          Batch Process All
+        </Button>
       </div>
-      <div>
-        <WorkflowInspector steps={WORKFLOW_STEPS} />
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatsCard
+          icon={<FileText className="size-5" />}
+          label="Total Applications"
+          value="24"
+          trend="+12%"
+          trendUp
+        />
+        <StatsCard
+          icon={<Clock className="size-5" />}
+          label="In Progress"
+          value="3"
+          trend="Active"
+          trendUp
+        />
+        <StatsCard
+          icon={<CheckCircle2 className="size-5" />}
+          label="Completed Today"
+          value="18"
+          trend="+5"
+          trendUp
+        />
+        <StatsCard
+          icon={<TrendingUp className="size-5" />}
+          label="Avg. Process Time"
+          value="2.3m"
+          trend="-45%"
+          trendUp
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Applications List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Pending Applications</h2>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="size-4" />
+              <span>{APPLICATIONS_DATA.length} applicants</span>
+            </div>
+          </div>
+          <Accordion type="single" collapsible className="flex flex-col gap-4">
+            {APPLICATIONS_DATA.map((application) => (
+              <ApplicationRow key={application.id} application={application} />
+            ))}
+          </Accordion>
+        </div>
+
+        {/* Workflow Inspector */}
+        <div>
+          <WorkflowInspector steps={WORKFLOW_STEPS} />
+        </div>
       </div>
     </div>
   );
 }
 
+const StatsCard = ({
+  icon,
+  label,
+  value,
+  trend,
+  trendUp,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  trend: string;
+  trendUp: boolean;
+}) => {
+  return (
+    <div className="relative overflow-hidden rounded-lg border bg-card p-6 shadow-sm transition-all hover:shadow-md">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="text-3xl font-bold tracking-tight">{value}</p>
+          <div className="flex items-center gap-1">
+            <span
+              className={`text-xs font-medium ${
+                trendUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {trend}
+            </span>
+            <span className="text-xs text-muted-foreground">from last week</span>
+          </div>
+        </div>
+        <div className="rounded-full bg-primary/10 p-3 text-primary">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ApplicationRow = ({ application }: { application: Application }) => {
-  const getUrgencyColor = (urgency: "low" | "medium" | "high") => {
+  const getUrgencyConfig = (urgency: "low" | "medium" | "high") => {
     switch (urgency) {
       case "high":
-        return "bg-red-500";
+        return {
+          bg: "bg-red-500/10 dark:bg-red-500/20",
+          dot: "bg-red-500",
+          text: "text-red-700 dark:text-red-400",
+          border: "border-red-200 dark:border-red-500/30",
+        };
       case "medium":
-        return "bg-orange-500";
+        return {
+          bg: "bg-orange-500/10 dark:bg-orange-500/20",
+          dot: "bg-orange-500",
+          text: "text-orange-700 dark:text-orange-400",
+          border: "border-orange-200 dark:border-orange-500/30",
+        };
       case "low":
-        return "bg-green-500";
+        return {
+          bg: "bg-green-500/10 dark:bg-green-500/20",
+          dot: "bg-green-500",
+          text: "text-green-700 dark:text-green-400",
+          border: "border-green-200 dark:border-green-500/30",
+        };
     }
   };
+
+  const urgencyConfig = getUrgencyConfig(application.urgency);
 
   return (
     <AccordionItem
       value={application.id.toString()}
-      className="border rounded-md shadow-md hover:shadow-lg transition-shadow overflow-hidden"
+      className={`border-2 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] bg-card ${urgencyConfig.border}`}
     >
-      <div className="grid grid-cols-3 items-center gap-4 p-4">
-        <div className="flex flex-col">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Date</p>
-          <p className="text-sm font-medium text-gray-700">
-            {application.createdAt.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-        <div className="flex items-center">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-gray-900">
-              {application.name}
-            </p>
-            <p className="text-sm text-gray-500">{application.description}</p>
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{application.name}</h3>
+                <p className="text-sm text-muted-foreground">{application.description}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${urgencyConfig.bg} border ${urgencyConfig.border}`}>
+            <div className={`w-2 h-2 rounded-full ${urgencyConfig.dot} animate-pulse`}></div>
+            <span className={`text-xs font-semibold uppercase tracking-wider ${urgencyConfig.text}`}>
+              {application.urgency}
+            </span>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2">
-          <div
-            className={`w-2.5 h-2.5 rounded-full ${getUrgencyColor(
-              application.urgency
-            )}`}
-          ></div>
-          <span className="text-xs font-medium text-gray-600 capitalize">
-            {application.urgency}
-          </span>
+
+        <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="size-4" />
+            <span>
+              {application.createdAt.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FileText className="size-4" />
+            <span>{application.pdfs?.length || 0} documents</span>
+          </div>
         </div>
+
+        <AccordionTrigger className="w-full">
+          <Button variant="outline" className="w-full gap-2">
+            <Zap className="size-4" />
+            Start Automated Processing
+          </Button>
+        </AccordionTrigger>
       </div>
-      <AccordionTrigger className="px-4">
-        Automatically Process
-      </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <iframe
-          src="https://example.com"
-          className="w-full h-[400px] border rounded-md"
-          title="Example"
-        />
+      
+      <AccordionContent className="px-6 pb-6">
+        <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold">Processing View</h4>
+            <Button size="sm" variant="secondary">Open Full Screen</Button>
+          </div>
+          <iframe
+            src="https://example.com"
+            className="w-full h-[400px] border rounded-md bg-background"
+            title="Application Processing"
+          />
+          <div className="flex gap-2">
+            <Button size="sm" variant="default" className="gap-2">
+              <CheckCircle2 className="size-4" />
+              Approve
+            </Button>
+            <Button size="sm" variant="destructive" className="gap-2">
+              <AlertCircle className="size-4" />
+              Reject
+            </Button>
+            <Button size="sm" variant="outline">
+              Request More Info
+            </Button>
+          </div>
+        </div>
       </AccordionContent>
     </AccordionItem>
   );
@@ -95,40 +251,66 @@ type WorkflowStep = {
 
 const WorkflowInspector = ({ steps }: { steps: WorkflowStep[] }) => {
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-gray-900">
-        Workflow Inspector
-      </h2>
-      <div className="flex flex-col gap-0">
-        {steps.map((step, index) => (
-          <div key={step.step} className="flex gap-4 relative">
-            {/* Step number circle */}
-            <div className="flex flex-col items-center relative">
-              <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold text-sm shrink-0 z-10">
-                {step.step}
-              </div>
-              {/* Connecting line - only show if not the last step */}
-              {index !== steps.length - 1 && (
-                <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-0.5 bg-gray-300 h-full" />
-              )}
-            </div>
-            {/* Step content */}
-            <div
-              className={`flex-1 pt-1 ${
-                index < steps.length - 1 ? "pb-6" : ""
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-medium text-gray-900">
-                  Step {step.step}: {step.name}
-                </h3>
-                {step.description && (
-                  <p className="text-sm text-gray-500">{step.description}</p>
+    <div className="flex flex-col gap-6 sticky top-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Automation Workflow</h2>
+          <p className="text-sm text-muted-foreground">AI-powered processing steps</p>
+        </div>
+        <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+          {steps.length} Steps
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-0">
+          {steps.map((step, index) => (
+            <div key={step.step} className="flex gap-4 relative group">
+              {/* Step indicator */}
+              <div className="flex flex-col items-center relative">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 text-white flex items-center justify-center font-bold text-sm shrink-0 z-10 shadow-lg group-hover:scale-110 transition-transform">
+                  {step.step}
+                </div>
+                {/* Connecting line with gradient */}
+                {index !== steps.length - 1 && (
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-0.5 bg-gradient-to-b from-primary/50 to-primary/20 h-full" />
                 )}
               </div>
+              
+              {/* Step content */}
+              <div
+                className={`flex-1 pt-1.5 ${
+                  index < steps.length - 1 ? "pb-8" : ""
+                }`}
+              >
+                <div className="flex flex-col gap-2 p-4 rounded-lg bg-muted/50 border border-transparent hover:border-primary/20 hover:bg-muted transition-all">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold leading-snug">
+                      {step.name}
+                    </h3>
+                    <CheckCircle2 className="size-4 text-green-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  {step.description && (
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {step.description}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* Progress indicator */}
+        <div className="mt-6 pt-6 border-t">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-muted-foreground">Automation Progress</span>
+            <span className="font-semibold text-primary">Ready</span>
           </div>
-        ))}
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full w-0 group-hover:w-full transition-all duration-1000" />
+          </div>
+        </div>
       </div>
     </div>
   );
