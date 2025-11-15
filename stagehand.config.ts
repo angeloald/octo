@@ -17,7 +17,8 @@ if (process.env.NODE_ENV !== "production") {
     });
 }
 
-const DEFAULT_MODEL: AvailableModel = "google/gemini-2.5-flash";
+// Use Gemini Flash for general operations (extract, observe, act)
+const DEFAULT_MODEL: AvailableModel = "google/gemini-2.0-flash-exp";
 
 // Helper to safely get and trim env vars
 const getEnv = (key: string): string | undefined => {
@@ -25,7 +26,7 @@ const getEnv = (key: string): string | undefined => {
     return value?.trim() || undefined;
 };
 
-// Always use BROWSERBASE if credentials are available, otherwise LOCAL
+// Use BROWSERBASE mode for PDF viewing
 const browserbaseApiKey = getEnv("BROWSERBASE_API_KEY");
 const browserbaseProjectId = getEnv("BROWSERBASE_PROJECT_ID");
 const env: V3Env =
@@ -52,6 +53,9 @@ const StagehandConfig: V3Options = {
             projectId: browserbaseProjectId,
             browserbaseSessionCreateParams: {
                 projectId: browserbaseProjectId,
+                browserSettings: {
+                    enablePdfViewer: true, // Enable PDF viewer for opening PDF documents
+                } as any,
             },
         }
         : {}),

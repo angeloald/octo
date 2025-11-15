@@ -30,8 +30,7 @@ export async function runStagehand(sessionId?: string) {
         browserbaseSessionID: sessionId,
     });
     await stagehand.init();
-    const page = await stagehand.context.awaitActivePage();
-    await main({ page, stagehand });
+    await main({ stagehand });
     await stagehand.close();
 }
 
@@ -75,8 +74,11 @@ export async function startBBSSession() {
         apiKey: apiKey,
     });
 
-    const sessionCreateParams = {
+    const sessionCreateParams: any = {
         projectId: projectId,
+        browserSettings: {
+            enablePdfViewer: true, // Enable PDF viewer for opening PDF documents
+        },
     };
 
     try {
@@ -117,7 +119,7 @@ export async function getConfig(): Promise<StagehandRuntimeConfig> {
         process.env.BROWSERBASE_API_KEY !== undefined &&
         process.env.BROWSERBASE_PROJECT_ID !== undefined;
 
-    const hasLLMCredentials = process.env.OPENAI_API_KEY !== undefined;
+    const hasLLMCredentials = process.env.GEMINI_API_KEY !== undefined;
 
     return {
         env: StagehandConfig.env,
