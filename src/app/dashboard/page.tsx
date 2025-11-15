@@ -16,8 +16,52 @@ import {
   Users,
   Zap
 } from "lucide-react";
+import {
+  getConfig,
+  runStagehand,
+  startBBSSession,
+  type StagehandRuntimeConfig,
+} from "@/app/api/stagehand/run";
+import DebuggerIframe from "@/components/stagehand/debuggerIframe";
+import { useCallback, useEffect, useState } from "react";
 
 export default function DashboardPage() {
+  const [config, setConfig] = useState<StagehandRuntimeConfig | null>(null);
+  const [running, setRunning] = useState(false);
+  const [debugUrl, setDebugUrl] = useState<string | undefined>(undefined);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConfig = useCallback(async () => {
+    const config = await getConfig();
+    setConfig(config);
+  }, []);
+
+  const startScript = useCallback(async () => {
+    if (!config) return;
+
+    setRunning(true);
+    setError(null);
+
+    try {
+      if (config.env === "BROWSERBASE") {
+        const { sessionId, debugUrl } = await startBBSSession();
+        setDebugUrl(debugUrl);
+        setSessionId(sessionId);
+        await runStagehand(sessionId);
+      } else {
+        await runStagehand();
+      }
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setRunning(false);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
   return (
     <div className="w-full space-y-8">
       {/* Header Section */}
@@ -79,7 +123,15 @@ export default function DashboardPage() {
           </div>
           <Accordion type="single" collapsible className="flex flex-col gap-4">
             {APPLICATIONS_DATA.map((application) => (
-              <ApplicationRow key={application.id} application={application} />
+              <ApplicationRow 
+                key={application.id} 
+                application={application}
+                running={running}
+                debugUrl={debugUrl}
+                config={config}
+                error={error}
+                onStartProcessing={startScript}
+              />
             ))}
           </Accordion>
         </div>
@@ -132,7 +184,21 @@ const StatsCard = ({
   );
 };
 
-const ApplicationRow = ({ application }: { application: Application }) => {
+const ApplicationRow = ({ 
+  application, 
+  running, 
+  debugUrl, 
+  config, 
+  error,
+  onStartProcessing 
+}: { 
+  application: Application;
+  running: boolean;
+  debugUrl: string | undefined;
+  config: StagehandRuntimeConfig | null;
+  error: string | null;
+  onStartProcessing: () => void;
+}) => {
   const getUrgencyConfig = (urgency: "low" | "medium" | "high") => {
     switch (urgency) {
       case "high":
@@ -204,10 +270,10 @@ const ApplicationRow = ({ application }: { application: Application }) => {
           </div>
         </div>
 
-        <AccordionTrigger className="w-full">
-          <Button variant="outline" className="w-full gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 text-primary">
+        <AccordionTrigger className="w-full" onClick={onStartProcessing}>
+          <Button variant="outline" className="w-full gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 text-primary" disabled={running}>
             <Zap className="size-4" />
-            Start Automated Processing
+            {running ? "Processing..." : "Start Automated Processing"}
           </Button>
         </AccordionTrigger>
       </div>
@@ -216,13 +282,24 @@ const ApplicationRow = ({ application }: { application: Application }) => {
         <div className="rounded-lg border border-primary/20 bg-card/30 backdrop-blur-sm p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-foreground">Processing View</h4>
-            <Button size="sm" variant="secondary" className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30">Open Full Screen</Button>
           </div>
-          <iframe
-            src="https://example.com"
-            className="w-full h-[400px] border border-primary/20 rounded-lg bg-background/50"
-            title="Application Processing"
-          />
+          
+          {error && (
+            <div className="bg-red-400 text-white rounded-md p-2">
+              Error: {error}
+            </div>
+          )}
+          
+          {running && config && (
+            <DebuggerIframe debugUrl={debugUrl} env={config.env} />
+          )}
+          
+          {!running && !error && (
+            <div className="w-full h-[400px] border border-primary/20 rounded-lg bg-background/50 flex items-center justify-center text-muted-foreground">
+              Click "Start Automated Processing" to begin
+            </div>
+          )}
+          
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="gap-2 bg-[#00C6A7]/10 hover:bg-[#00C6A7]/20 text-[#00C6A7] border-[#00C6A7]/30 hover:border-[#00C6A7]/50 shadow-lg shadow-[#00C6A7]/10 hover:shadow-[#00C6A7]/20 transition-all">
               <CheckCircle2 className="size-4" />
