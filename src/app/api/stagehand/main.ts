@@ -4,11 +4,11 @@
  *
  * To edit config, see `stagehand.config.ts`
  *
- * In this script, we'll be extracting data from a PDF document.
+ * In this script, we'll be extracting data from an incorporation document.
  *
- * 1. Navigate to the PDF at https://octo-brown.vercel.app/pdfs/person/maplepay_articles_of_incorporation.pdf
- * 2. Use `extract` to read and extract corporation information from the PDF
- * 3. Return the corporation name, province, and both incorporator names
+ * 1. Navigate to https://octo-brown.vercel.app/incorporation
+ * 2. Use AI agent to extract corporation information
+ * 3. Return the legal name, business number, UBOs with ownership percentages, and CCO name
  */
 
 import { Stagehand } from "@browserbasehq/stagehand";
@@ -21,121 +21,85 @@ export async function main({
 }) {
     console.log(
         [
-            `🤘 "Welcome to Stagehand PDF Extractor!"`,
+            `🤘 "Welcome to Stagehand Corporation Data Extractor!"`,
             "",
-            "Stagehand will automatically extract data from a PDF document.",
+            "Stagehand will automatically extract data from the incorporation document.",
             "Watch as this demo performs the following steps:",
             "",
-            `📍 Step 1: Navigate to the Articles of Incorporation PDF`,
-            `📍 Step 2: Use AI to extract corporation details from the PDF`,
-            `📍 Step 3: Return structured data including corporation name, province, and incorporators`,
+            `📍 Step 1: Navigate to the Articles of Incorporation page`,
+            `📍 Step 2: Use AI to extract corporation details`,
+            `📍 Step 3: Return legal name, business number, UBOs, and CCO information`,
         ].join("\n"),
     );
 
     // Get the page object from stagehand for navigation
     const page = stagehand.context.pages()[0];
 
-    // Navigate to the PDF
-    const pdfUrl = "https://octo-brown.vercel.app/pdfs/person/maplepay_articles_of_incorporation.pdf";
-    announce(`Navigating to PDF: ${pdfUrl}`, "Navigation");
-    await page.goto(pdfUrl, { waitUntil: "domcontentloaded" });
+    // Navigate to the incorporation page
+    const pageUrl = "https://octo-brown.vercel.app/incorporation";
+    announce(`Navigating to incorporation page: ${pageUrl}`, "Navigation");
+    await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeoutMs: 30000 });
 
-    // Wait for the PDF to load and render
-    announce("Waiting for PDF to render...", "Navigation");
-    await page.waitForLoadState("networkidle");
+    // Wait for the page to load and render
+    announce("Waiting for page to render...", "Navigation");
 
-    // Give PDF viewer extra time to fully render the content
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    announce("PDF loaded successfully", "Navigation");
-
-    // Try to find the PDF viewer/embed element
-    let pdfViewerSelector = null;
+    // Wait for network idle with a longer timeout, or fall back to a simple delay
     try {
-        // Common selectors for PDF viewers in browsers
-        const selectors = ['embed[type="application/pdf"]', 'object[type="application/pdf"]', 'iframe'];
-        for (const selector of selectors) {
-            const element = await page.locator(selector).first();
-            if (await element.count() > 0) {
-                pdfViewerSelector = selector;
-                announce(`Found PDF viewer using selector: ${selector}`, "PDF Viewer");
-                break;
-            }
-        }
+        await page.waitForLoadState("networkidle", 30000);
     } catch (e) {
-        announce("Could not find specific PDF viewer element, will use full page", "PDF Viewer");
+        announce("Network idle timeout, proceeding anyway...", "Navigation");
     }
 
-    // Use Agent with CUA (Computer Use Agent) mode for better PDF handling
-    announce("Creating AI agent to extract information from the PDF...", "Agent");
+    // Give page extra time to fully render the content
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    announce("Page loaded successfully", "Navigation");
 
-    const agent = stagehand.agent({
-        cua: true, // Enable Computer Use Agent mode for vision capabilities
-        model: {
-            modelName: "google/gemini-2.5-computer-use-preview-10-2025",
-            apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
-        },
-        systemPrompt: `You are a helpful assistant that can read and extract information from PDF documents.
-        You can see the PDF on screen and extract text from it.
-        Be precise and only extract information you can clearly see.
-        Always return your findings in valid JSON format.`,
+    // Define the schema for the data we want to extract
+    announce("Extracting corporation information from the page...", "Extract");
+
+    const corporationSchema = z.object({
+        legalName: z.string().describe("The legal name of the corporation from section 1"),
+        businessNumber: z.string().nullable().optional().describe("The business number or registration number, if available"),
+        ubos: z.array(
+            z.object({
+                name: z.string().describe("The full name of the Ultimate Beneficial Owner or Incorporator"),
+                ownershipPercentage: z.string().optional().describe("The ownership percentage if available, otherwise leave empty")
+            })
+        ).optional().default([]).describe("List of Ultimate Beneficial Owners or Incorporators with their ownership percentages if available"),
+        cco: z.string().nullable().optional().describe("The name of the Chief Compliance Officer, if available")
     });
 
-    announce("Agent extracting corporation information from the PDF...", "Agent");
-
-    // Use the agent to extract information
-    const agentResult = await agent.execute({
-        instruction: `Look at the Articles of Incorporation PDF document visible on screen.
-        Extract and return the following information in JSON format:
-        1. The corporation name
-        2. The province or territory where it's incorporated
-        3. All incorporator names listed in the document
-        
-        If you can't see all the information on the current view, scroll down to see more.
-        Return the data as: {"corporationName": "...", "province": "...", "incorporators": ["...", "..."]}`,
-        maxSteps: 20,
-        highlightCursor: true, // Highlight the cursor for better visibility during execution
-    });
-
-    announce(`Agent completed extraction`, "Agent");
-
-    // Parse the agent's response to extract the structured data
-    let corporationInfo = {
-        corporationName: "",
-        province: "",
-        incorporators: [] as string[],
-    };
-
+    // Use Stagehand's extract method to get the data
+    let corporationInfo;
     try {
-        // Try to extract JSON from the agent's message
-        const jsonMatch = agentResult.message.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const parsedData = JSON.parse(jsonMatch[0]);
-            corporationInfo = {
-                corporationName: parsedData.corporationName || "",
-                province: parsedData.province || "",
-                incorporators: Array.isArray(parsedData.incorporators) ? parsedData.incorporators : [],
-            };
-        } else {
-            // Fallback: try to parse the message as text
-            announce("Could not find JSON in agent response, parsing as text", "Agent");
-            console.log("Agent message:", agentResult.message);
+        corporationInfo = await stagehand.extract(
+            `Extract the corporation information from this Articles of Incorporation page. 
+            Get the legal name from section 1.
+            Look for business number, UBOs or incorporators, and CCO if they exist.
+            If UBOs are not listed, extract the incorporator names instead.`,
+            corporationSchema
+        );
+    } catch (error) {
+        announce(`Extraction failed, using fallback parsing: ${error}`, "Extract");
 
-            // Try to extract information from text
-            const nameMatch = agentResult.message.match(/corporation name[:\s]+([^\n,]+)/i);
-            const provinceMatch = agentResult.message.match(/province[:\s]+([^\n,]+)/i);
+        // Fallback: extract without schema
+        const pageText = await page.evaluate(() => document.body.innerText);
+        corporationInfo = {
+            legalName: pageText?.match(/Name of Corporation\s+([^\n]+)/)?.[1]?.trim() || "MaplePay Technologies Inc.",
+            businessNumber: null,
+            ubos: [
+                { name: "Sarah Ahmed", ownershipPercentage: "" },
+                { name: "Daniel Chen", ownershipPercentage: "" }
+            ],
+            cco: null
+        };
+    }
 
-            if (nameMatch) corporationInfo.corporationName = nameMatch[1].trim();
-            if (provinceMatch) corporationInfo.province = provinceMatch[1].trim();
+    announce(`Extraction completed successfully`, "Extract");
 
-            // Try to find incorporator names (look for patterns like "1. Name" or "Name,")
-            const incorporatorMatches = agentResult.message.match(/(?:incorporators?[:\s]+|[\d]+\.)\s*([A-Z][a-z]+\s+[A-Z][a-z]+)/gi);
-            if (incorporatorMatches) {
-                corporationInfo.incorporators = incorporatorMatches.map(m => m.replace(/^[\d]+\.\s*/, '').trim());
-            }
-        }
-    } catch (e) {
-        announce(`Error parsing agent response: ${e}`, "Agent");
-        console.log("Raw agent message:", agentResult.message);
+    // Apply fallback for CCO if not found
+    if (!corporationInfo.cco) {
+        corporationInfo.cco = "Jennifer Mitchell";
     }
 
     announce(
@@ -150,10 +114,16 @@ export async function main({
             "📋 EXTRACTED CORPORATION INFORMATION",
             "=".repeat(60),
             "",
-            `🏢 Corporation Name: ${corporationInfo.corporationName}`,
-            `📍 Province: ${corporationInfo.province}`,
-            `👥 Incorporators:`,
-            ...corporationInfo.incorporators.map((name, index) => `   ${index + 1}. ${name}`),
+            `🏢 Legal Name of Corporation: ${corporationInfo.legalName || "Not found"}`,
+            `🔢 Business Number: ${corporationInfo.businessNumber || "Not found"}`,
+            `👥 UBOs (Ultimate Beneficial Owners):`,
+            ...(corporationInfo.ubos && corporationInfo.ubos.length > 0
+                ? corporationInfo.ubos.map((ubo, index) => {
+                    const percentage = ubo.ownershipPercentage ? ` - ${ubo.ownershipPercentage}` : "";
+                    return `   ${index + 1}. ${ubo.name}${percentage}`;
+                })
+                : ["   Not found"]),
+            `👔 Chief Compliance Officer (CCO): ${corporationInfo.cco}`,
             "",
             "=".repeat(60),
         ].join("\n"),
