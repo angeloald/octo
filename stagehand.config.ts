@@ -18,14 +18,18 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const DEFAULT_MODEL: AvailableModel = "gpt-4o";
-const envFromConfig = (process.env.STAGEHAND_ENV?.toUpperCase() ??
-    process.env.NEXT_PUBLIC_STAGEHAND_ENV?.toUpperCase()) as V3Env | undefined;
 
+// Helper to safely get and trim env vars
+const getEnv = (key: string): string | undefined => {
+    const value = process.env[key];
+    return value?.trim() || undefined;
+};
+
+// Always use BROWSERBASE if credentials are available, otherwise LOCAL
+const browserbaseApiKey = getEnv("BROWSERBASE_API_KEY");
+const browserbaseProjectId = getEnv("BROWSERBASE_PROJECT_ID");
 const env: V3Env =
-    envFromConfig ??
-    (process.env.BROWSERBASE_API_KEY && process.env.BROWSERBASE_PROJECT_ID
-        ? "BROWSERBASE"
-        : "LOCAL");
+    browserbaseApiKey && browserbaseProjectId ? "BROWSERBASE" : "LOCAL";
 
 const StagehandConfig: V3Options = {
     env,
@@ -35,21 +39,23 @@ const StagehandConfig: V3Options = {
     localBrowserLaunchOptions: {
         headless: false /* Run browser in headless mode */,
     },
-    model: process.env.OPENAI_API_KEY
+    model: getEnv("OPENAI_API_KEY")
         ? {
             modelName: DEFAULT_MODEL,
-            apiKey: process.env.OPENAI_API_KEY,
+            apiKey: getEnv("OPENAI_API_KEY")!,
         }
         : DEFAULT_MODEL,
+    // Always set Browserbase credentials if available
+    ...(browserbaseApiKey && browserbaseProjectId
+        ? {
+            apiKey: browserbaseApiKey,
+            projectId: browserbaseProjectId,
+            browserbaseSessionCreateParams: {
+                projectId: browserbaseProjectId,
+            },
+        }
+        : {}),
 };
-
-if (env === "BROWSERBASE") {
-    StagehandConfig.apiKey = process.env.BROWSERBASE_API_KEY;
-    StagehandConfig.projectId = process.env.BROWSERBASE_PROJECT_ID;
-    StagehandConfig.browserbaseSessionCreateParams = {
-        projectId: process.env.BROWSERBASE_PROJECT_ID,
-    };
-}
 
 export default StagehandConfig;
 
